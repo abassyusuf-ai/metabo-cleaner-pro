@@ -2,48 +2,59 @@ import streamlit as st
 import pandas as pd
 import re
 
-st.set_page_config(page_title="Metabo-Cleaner Pro", layout="wide")
+st.set_page_config(page_title="Metabo-Cleaner Pro", layout="wide", page_icon="🧪")
+
+# --- SIDEBAR: MONETIZATION & INFO ---
+st.sidebar.title("About")
+st.sidebar.info("Developed by a Metabolomics Postdoc to simplify data preprocessing.")
+st.sidebar.markdown("---")
+st.sidebar.write("🙏 **Support this project**")
+# Replace 'yourname' with your actual BuyMeACoffee username later
+st.sidebar.markdown("[☕ Buy me a coffee](https://www.buymeacoffee.com/abassyusuf)") 
 
 st.title("🧪 Metabo-Cleaner Pro")
-st.markdown("### Turn messy Mass Spec data into 'Ready-to-Analyze' Feature Tables")
+st.markdown("### Pivot, Clean, and Normalize your Mass Spec Data")
 
-uploaded_file = st.file_uploader("Upload your .csv file (Long Format)", type=["csv"])
+uploaded_file = st.file_uploader("Step 1: Upload your Long-Format .csv file", type=["csv"])
 
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
-    st.write("✅ **File Uploaded!** Here is a preview of your raw data:")
-    st.dataframe(df.head())
+    st.success("File Uploaded!")
+    
+    with st.expander("Preview Raw Data"):
+        st.dataframe(df.head())
 
-    # --- THE PRODUCT LOGIC ---
-    st.sidebar.header("Settings")
-    mz_col = st.sidebar.selectbox("Select m/z column", df.columns, index=0)
-    rt_col = st.sidebar.selectbox("Select RT column", df.columns, index=1)
-    sample_col = st.sidebar.selectbox("Select Sample ID column", df.columns, index=4)
-    intensity_col = st.sidebar.selectbox("Select Intensity column", df.columns, index=2)
+    # --- SETTINGS ---
+    st.markdown("### Step 2: Configure Columns")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1: mz_col = st.selectbox("m/z Column", df.columns, index=0)
+    with col2: rt_col = st.selectbox("RT Column", df.columns, index=1)
+    with col3: sample_col = st.selectbox("Sample Name Column", df.columns, index=4 if len(df.columns)>4 else 0)
+    with col4: intensity_col = st.selectbox("Intensity Column", df.columns, index=2)
 
-    if st.button("Process & Pivot Data"):
-        # 1. Create Unique ID
+    # --- PROCESSING ---
+    if st.button("🚀 Process & Create Feature Table"):
+        # 1. Create Unique Feature ID
         df['Feature_ID'] = df[mz_col].astype(str) + "_" + df[rt_col].astype(str)
         
         # 2. Pivot
-        pivot_df = df.pivot_table(
-            index='Feature_ID', 
-            columns=sample_col, 
-            values=intensity_col, 
-            aggfunc='mean'
-        ).fillna(0)
-
-        st.write("✨ **Cleaned Feature Table:**")
+        pivot_df = df.pivot_table(index='Feature_ID', columns=sample_col, values=intensity_col, aggfunc='mean').fillna(0)
+        
+        st.markdown("### Step 3: View & Normalize")
+        st.write("Raw Feature Table (Pivoted):")
         st.dataframe(pivot_df.head())
 
-        # 3. Download Button
-        csv = pivot_df.to_csv().encode('utf-8')
-        st.download_button(
-            label="📥 Download Cleaned CSV",
-            data=csv,
-            file_name="metabo_cleaned_data.csv",
-            mime="text/csv",
-        )
-        st.success("Success! You saved hours of manual Excel work.")
+        # 3. Normalization Feature
+        tic_norm = pivot_df.div(pivot_df.sum(axis=0), axis=1) * 1000000 # Normalized to 10^6
+        
+        st.write("TIC Normalized Table (Counts per Million):")
+        st.dataframe(tic_norm.head())
 
-st.info("Goal: Simplify Metabolomics. Built by a Scientist, for Scientists.")
+        # 4. Download Buttons
+        c1, c2 = st.columns(2)
+        with c1:
+            st.download_button("📥 Download Pivoted CSV", pivot_df.to_csv().encode('utf-8'), "pivoted_data.csv", "text/csv")
+        with c2:
+            st.download_button("📥 Download TIC Normalized CSV", tic_norm.to_csv().encode('utf-8'), "normalized_data.csv", "text/csv")
+        
+        st.balloons()
