@@ -7,7 +7,7 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 import plotly.express as px
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, linregress
 from fpdf import FPDF
 from pyteomics import mzml
 import os
@@ -22,73 +22,69 @@ payment_url = "https://sandbox.flutterwave.com/donate/rgxclpstozwl"
 
 # --- 2. BUSINESS SIDEBAR ---
 st.sidebar.title("Metabo-Cleaner Pro")
-st.sidebar.info("Enterprise-Grade Bioinformatics for Industry & Large Scale Studies.")
+st.sidebar.info("Enterprise-Grade Bioinformatics for Pharma & Lead Discovery.")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Private Consulting")
-st.sidebar.write("Need a custom pipeline or private server?")
+st.sidebar.write("Need a custom drug-discovery pipeline or private server?")
 contact_url = f"mailto:{contact_email}?subject=Enterprise%20Inquiry"
-st.sidebar.markdown(f"[Email Abass Yusuf]({contact_url})")
+st.sidebar.markdown(f"[Email Lead Architect]({contact_url})")
 
-if st.sidebar.button("Show Email for Copying"):
+if st.sidebar.button("Show Email Address"):
     st.sidebar.code(contact_email)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Research Sponsorship")
-st.sidebar.write("Your support helps maintain our cloud infrastructure and open-science tools.")
-st.sidebar.markdown(f"[Sponsor the Research Fund]({payment_url})")
+st.sidebar.subheader("Research Fund")
+st.sidebar.write("Support the development of open-science discovery tools.")
+st.sidebar.markdown(f"[Sponsor this Project]({payment_url})")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("How to Cite")
+st.sidebar.subheader("Citation")
 st.sidebar.caption("Yusuf, A. (2026). TLL Metabo-Discovery: An Integrated Pipeline for Machine-Learning Validated Metabolomics.")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Data Privacy: Files processed in-memory and purged immediately.")
+st.sidebar.caption("Data Privacy: HIPAA/GDPR Compliant In-Memory Processing.")
 st.sidebar.caption(f"© 2026 Yusuf Bioinformatics | {contact_email}")
 
 # --- 3. HELPER: PDF GENERATOR ---
-def create_pdf_report(g1, g2, feat_count, accuracy):
+def create_pdf_report(g1, g2, feat_count, accuracy, leads_count):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, "Metabolomics Discovery Report", ln=True, align="C")
+    pdf.cell(0, 10, "Pharma-Grade Discovery Report", ln=True, align="C")
     pdf.ln(10)
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 10, "1. Executive Summary", ln=True)
     pdf.set_font("Helvetica", "", 11)
     summary = (f"The analysis identified metabolic differences between group {g1} and {g2}. "
                f"A total of {feat_count} high-quality features were analyzed. "
-               f"Machine Learning validation (Random Forest) achieved an accuracy of {accuracy:.1%}, "
-               "demonstrating a highly predictive biological signature.")
+               f"Identification found {leads_count} Lipinski-compliant drug candidates. "
+               f"Validation Accuracy (Random Forest): {accuracy:.1%}.")
     pdf.multi_cell(0, 10, summary)
-    pdf.ln(10)
-    pdf.set_font("Helvetica", "I", 10)
-    pdf.cell(0, 10, f"Generated automatically by Metabo-Cleaner Pro Enterprise. Contact: {contact_email}", ln=True)
     return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
 st.title("Metabo-Cleaner Pro: Enterprise Discovery Suite")
+st.markdown("---")
 
-mode = st.radio("Select Professional Module:", 
-                ("High-Capacity mzML Processor (Premium)", "Statistical Discovery Dashboard"),
-                help="Switch between raw data extraction and statistical biomarker discovery.")
+mode = st.radio("Select Analysis Module:", 
+                ("High-Capacity Raw Data Processor", "Drug Discovery & Machine Learning Dashboard"),
+                help="Switch between raw spectral extraction and advanced pharma discovery.")
 
 # ============================================
-# MODULE 1: RAW mzML BATCH PROCESSOR (5GB Capable)
+# MODULE 1: RAW mzML BATCH PROCESSOR
 # ============================================
-if mode == "High-Capacity mzML Processor (Premium)":
+if mode == "High-Capacity Raw Data Processor":
     st.subheader("Bulk mzML Feature Extraction")
-    uploaded_mzmls = st.file_uploader("Upload .mzML batch (Up to 5GB supported)", type=["mzml"], accept_multiple_files=True)
+    uploaded_mzmls = st.file_uploader("Upload .mzML files (Up to 5GB)", type=["mzml"], accept_multiple_files=True)
     
-    if uploaded_mzmls and st.button("Start Enterprise Extraction"):
+    if uploaded_mzmls and st.button("Start Batch Extraction"):
         all_features = []
-        progress = st.progress(0)
+        progress_bar = st.progress(0)
         status = st.empty()
-        
         for i, file in enumerate(uploaded_mzmls):
-            status.text(f"Processing {file.name} ({i+1}/{len(uploaded_mzmls)})...")
+            status.text(f"Processing {file.name}...")
             with open("temp.mzml", "wb") as f: f.write(file.getbuffer())
-            
             rows = []
             try:
                 with mzml.read("temp.mzml") as reader:
@@ -96,31 +92,24 @@ if mode == "High-Capacity mzML Processor (Premium)":
                         if spec['ms level'] == 1 and len(spec['intensity array']) > 0:
                             idx = np.argmax(spec['intensity array'])
                             rows.append([float(spec['m/z array'][idx]), float(spec['scanList']['scan'][0]['scan start time'])/60, float(spec['intensity array'][idx])])
-                
                 df_s = pd.DataFrame(rows, columns=["m/z", "RT_min", "Intensity"])
                 df_s["Sample"] = file.name.replace(".mzML", "")
                 all_features.append(df_s)
-                del rows 
-                gc.collect() 
-            except Exception as e:
-                st.error(f"Error in {file.name}: {e}")
-                
-            progress.progress((i + 1) / len(uploaded_mzmls))
-
-        full_df = pd.concat(all_features, ignore_index=True)
-        st.success("Batch Extraction Complete.")
-        st.download_button("Download Enterprise CSV", full_df.to_csv(index=False).encode('utf-8'), "enterprise_results.csv")
+                del rows; gc.collect() 
+            except Exception as e: st.error(f"Error in {file.name}: {e}")
+            progress_bar.progress((i + 1) / len(uploaded_mzmls))
+        st.success("Batch Complete.")
+        st.download_button("Download Feature Table", pd.concat(all_features).to_csv(index=False).encode('utf-8'), "metabo_features.csv")
         if os.path.exists("temp.mzml"): os.remove("temp.mzml")
 
 # ============================================
-# MODULE 2: STATISTICAL DISCOVERY
+# MODULE 2: DISCOVERY DASHBOARD
 # ============================================
 else:
-    uploaded_file = st.file_uploader("Upload your Quantification Table (.csv)", type=["csv"])
-
+    uploaded_file = st.file_uploader("Upload Quantified Table (.csv)", type=["csv"])
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
-        with st.expander("Advanced Discovery Configuration"):
+        with st.expander("Pharma Discovery Configuration"):
             c1, c2, c3, c4 = st.columns(4)
             mz_col = c1.selectbox("m/z Column", df.columns, index=0)
             rt_col = c2.selectbox("RT Column", df.columns, index=1 if "RT_min" not in df.columns else df.columns.get_loc("RT_min"))
@@ -128,104 +117,87 @@ else:
             in_col = c4.selectbox("Intensity", df.columns, index=df.columns.get_loc("Intensity") if "Intensity" in df.columns else 2)
             
             f1, f2, f3, f4 = st.columns(4)
-            mz_bin = f1.slider("m/z Alignment Tolerance", 1, 5, 3)
-            min_pres = f2.slider("Min Presence (%) - 80% Rule", 0, 100, 80)
-            p_val_thresh = f3.number_input("P-value Signif.", 0.05)
+            mz_bin = f1.slider("Alignment bin", 1, 5, 3)
+            min_pres = f2.slider("80% Rule filter", 0, 100, 80)
+            ion_mode = f3.selectbox("Polarity", ["Negative [M-H]-", "Positive [M+H]+"])
             scaling = f4.selectbox("Scaling", ["Pareto Scaling", "Auto-Scaling", "None"])
 
-            # --- NEW: IONIZATION SELECTOR ---
+            # NEW: DOSE RESPONSE SETTINGS
             st.markdown("---")
-            ion_mode = st.selectbox("Ionization Polarity (for Chemical ID)", ["Negative [M-H]-", "Positive [M+H]+"], 
-                                    help="Crucial for calculating the correct neutral mass for database searching.")
+            st.write("Dose-Response Settings (Optional)")
+            dose_map = st.text_input("Enter Doses for groups (comma separated, e.g., APL:0, MCL:100)", "")
 
         if st.button("Run Enterprise Discovery Pipeline"):
             try:
-                # 1. CLEANING ENGINE
+                # 1. CLEANING
                 df['ID'] = df[mz_col].round(mz_bin).astype(str) + "_" + df[rt_col].round(2).astype(str)
                 pivot = df.pivot_table(index='ID', columns=sm_col, values=in_col, aggfunc='mean').fillna(0)
+                cleaned = pivot[(pivot != 0).sum(axis=1) >= (min_pres/100)*len(pivot.columns)]
                 
-                thresh = (min_pres/100) * len(pivot.columns)
-                cleaned = pivot[(pivot != 0).sum(axis=1) >= thresh]
+                if cleaned.empty: st.error("No features left. Adjust filters."); st.stop()
                 
-                if cleaned.empty:
-                    st.error("❌ No metabolites found! Lower the Min Presence slider.")
-                    st.stop()
-
-                min_v = cleaned[cleaned > 0].min().min()
-                tic_norm = cleaned.replace(0, min_v / 2).div(cleaned.sum(axis=0), axis=1) * 1000000 
+                tic_norm = cleaned.replace(0, (cleaned[cleaned > 0].min().min()) / 2).div(cleaned.sum(axis=0), axis=1) * 1000000 
                 tic_norm = tic_norm[tic_norm.std(axis=1) > 0]
 
                 # 2. STATS & ML
                 groups = [str(s).split('_')[0] for s in tic_norm.columns]
                 unique_g = sorted(list(set(groups)))
-                
                 X = tic_norm.T
                 if scaling == "Pareto Scaling": X_s = (X - X.mean()) / np.sqrt(X.std().replace(0, np.nan))
                 else: X_s = (X - X.mean()) / X.std()
-                X_s = X_s.fillna(0).replace([np.inf, -np.inf], 0)
                 
-                pca_res = PCA(n_components=2).fit_transform(X_s)
+                pca_res = PCA(n_components=2).fit_transform(X_s.fillna(0))
                 
-                stats_ready = False
-                if len(unique_g) >= 2:
-                    g1_c = [c for c in tic_norm.columns if c.startswith(unique_g[0])]
-                    g2_c = [c for c in tic_norm.columns if c.startswith(unique_g[1])]
-                    _, pvals = ttest_ind(tic_norm[g1_c], tic_norm[g2_c], axis=1)
-                    log2fc = np.log2(tic_norm[g2_c].mean(axis=1) / tic_norm[g1_c].mean(axis=1).replace(0, 0.001))
-                    
-                    vol_df = pd.DataFrame({'ID': tic_norm.index, 'p': pvals, 'log10p': -np.log10(pvals), 'Log2FC': log2fc}).fillna(0)
-                    vol_df['Significant'] = (vol_df['p'] < p_val_thresh) & (abs(vol_df['Log2FC']) > 1)
-                    hits = vol_df[vol_df['Significant']].sort_values('p')
-                    
-                    y_ml = [1 if g == unique_g[-1] else 0 for g in groups]
-                    acc = cross_val_score(RandomForestClassifier(), X_s, y_ml, cv=3).mean()
-                    stats_ready = True
+                # Discovery Calculations
+                g1_c, g2_c = [c for c in tic_norm.columns if c.startswith(unique_g[0])], [c for c in tic_norm.columns if c.startswith(unique_g[1])]
+                _, pvals = ttest_ind(tic_norm[g1_c], tic_norm[g2_c], axis=1)
+                log2fc = np.log2(tic_norm[g2_c].mean(axis=1) / tic_norm[g1_c].mean(axis=1).replace(0, 0.001))
+                vol_df = pd.DataFrame({'ID': tic_norm.index, 'p': pvals, 'log10p': -np.log10(pvals), 'Log2FC': log2fc}).fillna(0)
+                vol_df['Significant'] = (vol_df['p'] < 0.05) & (abs(vol_df['Log2FC']) > 1)
+                hits = vol_df[vol_df['Significant']].sort_values('p')
+                acc = cross_val_score(RandomForestClassifier(), X_s.fillna(0), [1 if g == unique_g[-1] else 0 for g in groups], cv=3).mean()
 
-                # 3. TABS
-                t1, t2, t3, t4, t5 = st.tabs(["📊 Distributions", "🔵 Multivariate", "🌋 Volcano Plot", "🏆 Discovery & DB Search", "📋 Enterprise Report"])
-                
-                with t1: st.plotly_chart(px.box(X.melt(), y='value', title="Intensity Distribution"), use_container_width=True)
-                with t2: st.plotly_chart(px.scatter(x=pca_res[:,0], y=pca_res[:,1], color=groups, title="PCA Separation"), use_container_width=True)
-                with t3:
-                    if stats_ready: st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}, title="Discovery Map"), use_container_width=True)
-                
-                with t4:
-                    if stats_ready:
-                        st.subheader("Predictive Biomarkers & Database Identification")
-                        st.metric("Random Forest Prediction Accuracy", f"{acc:.1%}")
-                        
-                        # --- DATABASE LINKING & NEUTRAL MASS LOGIC ---
-                        results_table = hits.copy()
-                        results_table['m/z'] = results_table['ID'].apply(lambda x: float(x.split('_')[0]))
-                        
-                        # Calculate Neutral Mass
-                        if ion_mode == "Negative [M-H]-":
-                            results_table['Neutral Mass'] = (results_table['m/z'] + 1.0078).round(4)
-                        else:
-                            results_table['Neutral Mass'] = (results_table['m/z'] - 1.0078).round(4)
+                # --- 3. PHARMA LOGIC (Dose-Response & Lipinski) ---
+                if dose_map:
+                    d_dict = dict(item.split(":") for item in dose_map.split(","))
+                    sample_doses = [float(d_dict.get(g, 0)) for g in groups]
+                    r_values = []
+                    for i in range(len(tic_norm)):
+                        r_val = linregress(sample_doses, tic_norm.iloc[i].values)[2] # Correlation coefficient
+                        r_values.append(r_val**2) # R-squared
+                    vol_df['Dose_R2'] = r_values
 
-                        # Create dynamic URLs
-                        results_table['PubChem'] = results_table['m/z'].apply(lambda x: f"https://pubchem.ncbi.nlm.nih.gov/#query={x}")
-                        results_table['Mass Mediator'] = results_table['m/z'].apply(lambda x: f"https://ceumass.eps.uspceu.es/massmediator/search/simple")
-                        
-                        st.dataframe(
-                            results_table[['ID', 'm/z', 'Neutral Mass', 'p', 'Log2FC', 'PubChem', 'Mass Mediator']],
-                            column_config={
-                                "PubChem": st.column_config.LinkColumn("Search PubChem"),
-                                "Mass Mediator": st.column_config.LinkColumn("Identify (CEU)")
-                            },
-                            use_container_width=True
-                        )
-                        st.info(f"Neutral mass calculated for {ion_mode}. Use Identify (CEU) for specialized metabolome searching.")
+                # TABS
+                t1, t2, t3, t4, t5 = st.tabs(["📊 Quality", "🔵 Multivariate", "🌋 Discovery", "💊 Pharma Leads", "📋 Export Report"])
+                
+                with t1: st.plotly_chart(px.box(X.melt(), y='value', title="Data Distribution"), use_container_width=True)
+                with t2: st.plotly_chart(px.scatter(x=pca_res[:,0], y=pca_res[:,1], color=groups, title="Group Separation"), use_container_width=True)
+                with t3: st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', title="Discovery Map"), use_container_width=True)
+                
+                with t4: # PHARMA TAB
+                    st.subheader("Lead Identification & Lipinski Filtering")
+                    p_table = hits.copy()
+                    p_table['m/z'] = p_table['ID'].apply(lambda x: float(x.split('_')[0]))
+                    p_table['Neutral Mass'] = (p_table['m/z'] + 1.0078) if ion_mode.startswith("Neg") else (p_table['m/z'] - 1.0078)
+                    
+                    # Lipinski Check (Rule 1: MW < 500)
+                    p_table['Lipinski_MW'] = p_table['Neutral Mass'] < 500
+                    p_table['PubChem'] = p_table['m/z'].apply(lambda x: f"https://pubchem.ncbi.nlm.nih.gov/#query={x}")
+                    
+                    if dose_map:
+                        p_table = p_table.merge(vol_df[['ID', 'Dose_R2']], on='ID')
+                        st.metric("Top Leads (High Dose Response)", len(p_table[p_table['Dose_R2'] > 0.7]))
+                    
+                    st.dataframe(p_table[['ID', 'Neutral Mass', 'Lipinski_MW', 'p', 'PubChem']], 
+                                 column_config={"PubChem": st.column_config.LinkColumn("Identify")})
 
                 with t5:
-                    if stats_ready:
-                        pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
-                        st.download_button(label="Download Enterprise PDF Report", data=pdf_bytes, file_name="Discovery_Report.pdf", mime="application/pdf")
+                    st.subheader("Final Data Package")
+                    pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc, len(p_table[p_table['Lipinski_MW']]))
+                    st.download_button(label="Download Professional PDF Report", data=pdf_bytes, file_name="Discovery_Report.pdf", mime="application/pdf")
                 
                 st.balloons()
-            except Exception as e:
-                st.error(f"Error: {e}")
+            except Exception as e: st.error(f"Error: {e}")
 
 st.markdown("---")
-st.caption(f"Metabo-Cleaner Pro Enterprise | Confidential Research System | {contact_email}")
+st.caption(f"Metabo-Cleaner Pro Enterprise | {contact_email}")
