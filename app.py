@@ -16,7 +16,11 @@ import gc
 # --- 1. PRO CONFIGURATION ---
 st.set_page_config(page_title="Metabo-Cleaner Pro | Enterprise", layout="wide", page_icon="💎")
 
-# --- 2. BUSINESS SIDEBAR (Fixed Links & Lead Gen) ---
+# --- GLOBAL VARIABLES ---
+contact_email = "abass.metabo@gmail.com"
+coffee_url = "https://www.buymeacoffee.com/abassyusuf"
+
+# --- 2. BUSINESS SIDEBAR ---
 st.sidebar.title("💎 Metabo-Cleaner Pro")
 st.sidebar.info("Enterprise-Grade Bioinformatics for Industry & Large Scale Studies.")
 
@@ -24,20 +28,17 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🔬 Private Consulting")
 st.sidebar.write("Need a private server or custom pipeline?")
 
-# Professional Email Link
-contact_email = "abass.metabo@gmail.com"
+# Direct Email Link
 contact_url = f"mailto:{contact_email}?subject=Enterprise%20Inquiry"
 st.sidebar.markdown(f"📩 [Email Abass Yusuf]({contact_url})")
 
-# Fallback: Copy Email Button (Important for users without default mail apps)
+# Fallback Copy Button
 if st.sidebar.button("📋 Show Email for Copying"):
     st.sidebar.code(contact_email)
-    st.sidebar.caption("Copy the email above and paste into Gmail/Outlook.")
+    st.sidebar.caption("Copy and paste into your mail app.")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("☕ Support Development")
-# Buy Me A Coffee Verified Link
-coffee_url = "https://www.buymeacoffee.com/abassyusuf"
 st.sidebar.markdown(f"☕ [Buy me a coffee]({coffee_url})")
 
 st.sidebar.markdown("---")
@@ -64,9 +65,9 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     
     pdf.ln(10)
     pdf.set_font("Helvetica", "I", 10)
-    pdf.cell(0, 10, "Generated automatically by Metabo-Cleaner Pro Enterprise.", ln=True)
+    pdf.cell(0, 10, f"Generated automatically by Metabo-Cleaner Pro Enterprise. Contact: {contact_email}", ln=True)
     
-    # Standard fix for Streamlit binary data
+    # Standard fix for Streamlit binary data: ensure output is bytes
     return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
@@ -80,7 +81,7 @@ mode = st.radio("Select Professional Module:",
 # ============================================
 if mode == "High-Capacity mzML Processor (Premium)":
     st.subheader("🚀 Bulk mzML Feature Extraction")
-    uploaded_mzmls = st.file_uploader("Upload .mzML batch (Up to 5GB)", type=["mzml"], accept_multiple_files=True)
+    uploaded_mzmls = st.file_uploader("Upload .mzML batch (Up to 5GB supported)", type=["mzml"], accept_multiple_files=True)
     
     if uploaded_mzmls and st.button("🚀 Start Enterprise Extraction"):
         all_features = []
@@ -190,7 +191,7 @@ else:
                 
                 with t3:
                     if stats_ready:
-                        st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}, title="Discovery Map"), use_container_width=True)
+                        st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}), use_container_width=True)
                 
                 with t4:
                     if stats_ready:
@@ -200,15 +201,14 @@ else:
                 with t5:
                     if stats_ready:
                         st.subheader("Professional Data Package")
-                        st.write("Generate and download your final discovery report below.")
+                        st.write("Download your final discovery report below.")
                         
-                        # Generate PDF data
                         pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
                         
                         st.download_button(
                             label="📥 Download Enterprise PDF Report",
                             data=pdf_bytes,
-                            file_name="Metabo_Discovery_Report.pdf",
+                            file_name="Discovery_Report.pdf",
                             mime="application/pdf"
                         )
                     else:
@@ -219,4 +219,4 @@ else:
                 st.error(f"Error: {e}")
 
 st.markdown("---")
-st.caption(f"💎 Metabo-Cleaner Pro Enterprise | {abass.metabo@gmail.com}")
+st.caption(f"💎 Metabo-Cleaner Pro Enterprise | {contact_email}")
