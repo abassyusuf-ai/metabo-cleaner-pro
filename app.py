@@ -219,4 +219,4 @@ else:
                 st.error(f"Error: {e}")
 
 st.markdown("---")
-st.caption(f"💎 Metabo-Cleaner Pro Enterprise | {contact_email}")
+st.caption(f"💎 Metabo-Cleaner Pro Enterprise | {abass.metabo@gmail.com}")
