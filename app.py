@@ -16,9 +16,10 @@ import gc
 # --- 1. PRO CONFIGURATION ---
 st.set_page_config(page_title="Metabo-Cleaner Pro | Enterprise", layout="wide", page_icon="💎")
 
-# --- GLOBAL VARIABLES ---
+# --- GLOBAL SETTINGS ---
 contact_email = "abass.metabo@gmail.com"
-coffee_url = "https://www.buymeacoffee.com/abassyusuf"
+# Your Verified Flutterwave Sandbox Link
+payment_url = "https://sandbox.flutterwave.com/donate/rgxclpstozwl"
 
 # --- 2. BUSINESS SIDEBAR ---
 st.sidebar.title("💎 Metabo-Cleaner Pro")
@@ -26,20 +27,23 @@ st.sidebar.info("Enterprise-Grade Bioinformatics for Industry & Large Scale Stud
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔬 Private Consulting")
-st.sidebar.write("Need a private server or custom pipeline?")
-
-# Direct Email Link
+st.sidebar.write("Need a custom pipeline or private server?")
 contact_url = f"mailto:{contact_email}?subject=Enterprise%20Inquiry"
 st.sidebar.markdown(f"📩 [Email Abass Yusuf]({contact_url})")
 
-# Fallback Copy Button
+# Fallback Copy Button for Consulting Leads
 if st.sidebar.button("📋 Show Email for Copying"):
     st.sidebar.code(contact_email)
     st.sidebar.caption("Copy and paste into your mail app.")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("☕ Support Development")
-st.sidebar.markdown(f"☕ [Buy me a coffee]({coffee_url})")
+st.sidebar.subheader("🚀 Research Sponsorship")
+st.sidebar.write("Your support helps maintain our cloud infrastructure and open-science tools.")
+st.sidebar.markdown(f"🙏 [Sponsor the Research Fund]({payment_url})")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📝 How to Cite")
+st.sidebar.caption("Yusuf, A. (2026). TLL Metabo-Discovery: An Integrated Pipeline for Machine-Learning Validated Metabolomics.")
 
 st.sidebar.markdown("---")
 st.sidebar.caption("🔒 Data Privacy: Files processed in-memory and purged immediately.")
@@ -67,7 +71,7 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf.set_font("Helvetica", "I", 10)
     pdf.cell(0, 10, f"Generated automatically by Metabo-Cleaner Pro Enterprise. Contact: {contact_email}", ln=True)
     
-    # Standard fix for Streamlit binary data: ensure output is bytes
+    # Return as standard bytes for Streamlit download button
     return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
@@ -77,7 +81,7 @@ mode = st.radio("Select Professional Module:",
                 ("High-Capacity mzML Processor (Premium)", "Statistical Discovery Dashboard"))
 
 # ============================================
-# MODULE 1: RAW mzML BATCH PROCESSOR
+# MODULE 1: RAW mzML BATCH PROCESSOR (5GB Capable)
 # ============================================
 if mode == "High-Capacity mzML Processor (Premium)":
     st.subheader("🚀 Bulk mzML Feature Extraction")
@@ -183,36 +187,19 @@ else:
                 # 3. TABS
                 t1, t2, t3, t4, t5 = st.tabs(["📊 Distributions", "🔵 Multivariate", "🌋 Volcano Plot", "🏆 ML Discovery", "💎 Enterprise Report"])
                 
-                with t1:
-                    st.plotly_chart(px.box(X.melt(), y='value', title="Intensity Distribution"), use_container_width=True)
-                
-                with t2:
-                    st.plotly_chart(px.scatter(x=pca_res[:,0], y=pca_res[:,1], color=groups, title="PCA Separation"), use_container_width=True)
-                
+                with t1: st.plotly_chart(px.box(X.melt(), y='value', title="Intensity Distribution"), use_container_width=True)
+                with t2: st.plotly_chart(px.scatter(x=pca_res[:,0], y=pca_res[:,1], color=groups, title="PCA Separation"), use_container_width=True)
                 with t3:
-                    if stats_ready:
-                        st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}), use_container_width=True)
-                
+                    if stats_ready: st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}, title="Discovery Map"), use_container_width=True)
                 with t4:
                     if stats_ready:
                         st.metric("Random Forest Prediction Accuracy", f"{acc:.1%}")
                         st.dataframe(hits)
-                
                 with t5:
                     if stats_ready:
                         st.subheader("Professional Data Package")
-                        st.write("Download your final discovery report below.")
-                        
                         pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
-                        
-                        st.download_button(
-                            label="📥 Download Enterprise PDF Report",
-                            data=pdf_bytes,
-                            file_name="Discovery_Report.pdf",
-                            mime="application/pdf"
-                        )
-                    else:
-                        st.info("Analysis requires at least 2 groups to generate a report.")
+                        st.download_button(label="📥 Download Enterprise PDF Report", data=pdf_bytes, file_name="Discovery_Report.pdf", mime="application/pdf")
                 
                 st.balloons()
             except Exception as e:
