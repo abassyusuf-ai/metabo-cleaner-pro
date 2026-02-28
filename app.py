@@ -16,21 +16,35 @@ import gc
 # --- 1. PRO CONFIGURATION ---
 st.set_page_config(page_title="Metabo-Cleaner Pro | Enterprise", layout="wide", page_icon="💎")
 
-# --- 2. BUSINESS SIDEBAR ---
+# --- 2. BUSINESS SIDEBAR (Fixed Links & Lead Gen) ---
 st.sidebar.title("💎 Metabo-Cleaner Pro")
 st.sidebar.info("Enterprise-Grade Bioinformatics for Industry & Large Scale Studies.")
 
-st.sidebar.subheader("🔬 Enterprise Consulting")
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔬 Private Consulting")
 st.sidebar.write("Need a private server or custom pipeline?")
-st.sidebar.markdown("[Contact Abass Yusuf](mailto:abass.bioinformatics@gmail.com?subject=Enterprise%20Inquiry)")
 
-st.sidebar.subheader("☕ Support Development")
-st.sidebar.markdown("[Buy me a coffee](https://www.buymeacoffee.com/abassyusuf)")
+# Professional Email Link
+contact_email = "abass.metabo@gmail.com"
+contact_url = f"mailto:{contact_email}?subject=Enterprise%20Inquiry"
+st.sidebar.markdown(f"📩 [Email Abass Yusuf]({contact_url})")
+
+# Fallback: Copy Email Button (Important for users without default mail apps)
+if st.sidebar.button("📋 Show Email for Copying"):
+    st.sidebar.code(contact_email)
+    st.sidebar.caption("Copy the email above and paste into Gmail/Outlook.")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("🔒 Privacy Shield: Data processed in-memory only.")
+st.sidebar.subheader("☕ Support Development")
+# Buy Me A Coffee Verified Link
+coffee_url = "https://www.buymeacoffee.com/abassyusuf"
+st.sidebar.markdown(f"☕ [Buy me a coffee]({coffee_url})")
 
-# --- 3. HELPER: PDF GENERATOR (Fixed with explicit bytes conversion) ---
+st.sidebar.markdown("---")
+st.sidebar.caption("🔒 Data Privacy: Files processed in-memory and purged immediately.")
+st.sidebar.caption(f"© 2026 Yusuf Bioinformatics | {contact_email}")
+
+# --- 3. HELPER: PDF GENERATOR ---
 def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf = FPDF()
     pdf.add_page()
@@ -52,7 +66,7 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf.set_font("Helvetica", "I", 10)
     pdf.cell(0, 10, "Generated automatically by Metabo-Cleaner Pro Enterprise.", ln=True)
     
-    # MAGIC FIX: Convert bytearray to bytes for Streamlit
+    # Standard fix for Streamlit binary data
     return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
@@ -160,7 +174,7 @@ else:
                     vol_df['Significant'] = (vol_df['p'] < p_val_thresh) & (abs(vol_df['Log2FC']) > 1)
                     hits = vol_df[vol_df['Significant']].sort_values('p')
                     
-                    # ML Validation
+                    # Machine Learning Validation
                     y_ml = [1 if g == unique_g[-1] else 0 for g in groups]
                     acc = cross_val_score(RandomForestClassifier(), X_s, y_ml, cv=3).mean()
                     stats_ready = True
@@ -186,14 +200,14 @@ else:
                 with t5:
                     if stats_ready:
                         st.subheader("Professional Data Package")
-                        st.write("Download your final discovery report below.")
+                        st.write("Generate and download your final discovery report below.")
                         
-                        # --- THE FIX: CAST TO BYTES ---
-                        pdf_output = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
+                        # Generate PDF data
+                        pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
                         
                         st.download_button(
                             label="📥 Download Enterprise PDF Report",
-                            data=pdf_output,
+                            data=pdf_bytes,
                             file_name="Metabo_Discovery_Report.pdf",
                             mime="application/pdf"
                         )
@@ -205,4 +219,4 @@ else:
                 st.error(f"Error: {e}")
 
 st.markdown("---")
-st.caption("💎 Metabo-Cleaner Pro Enterprise | abass.bioinformatics@gmail.com")
+st.caption(f"💎 Metabo-Cleaner Pro Enterprise | {contact_email}")
