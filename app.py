@@ -53,21 +53,17 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf.set_font("Helvetica", "B", 16)
     pdf.cell(0, 10, "Metabolomics Discovery Report", ln=True, align="C")
     pdf.ln(10)
-    
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 10, "1. Executive Summary", ln=True)
     pdf.set_font("Helvetica", "", 11)
-    
     summary = (f"The analysis identified metabolic differences between group {g1} and {g2}. "
                f"A total of {feat_count} high-quality features were analyzed. "
                f"Machine Learning validation (Random Forest) achieved an accuracy of {accuracy:.1%}, "
                "demonstrating a highly predictive biological signature.")
     pdf.multi_cell(0, 10, summary)
-    
     pdf.ln(10)
     pdf.set_font("Helvetica", "I", 10)
     pdf.cell(0, 10, f"Generated automatically by Metabo-Cleaner Pro Enterprise. Contact: {contact_email}", ln=True)
-    
     return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
@@ -135,7 +131,12 @@ else:
             mz_bin = f1.slider("m/z Alignment Tolerance", 1, 5, 3)
             min_pres = f2.slider("Min Presence (%) - 80% Rule", 0, 100, 80)
             p_val_thresh = f3.number_input("P-value Signif.", 0.05)
-            scaling = f4.selectbox("Scaling Method", ["Pareto Scaling", "Auto-Scaling", "None"])
+            scaling = f4.selectbox("Scaling", ["Pareto Scaling", "Auto-Scaling", "None"])
+
+            # --- NEW: IONIZATION SELECTOR ---
+            st.markdown("---")
+            ion_mode = st.selectbox("Ionization Polarity (for Chemical ID)", ["Negative [M-H]-", "Positive [M+H]+"], 
+                                    help="Crucial for calculating the correct neutral mass for database searching.")
 
         if st.button("Run Enterprise Discovery Pipeline"):
             try:
@@ -176,7 +177,6 @@ else:
                     vol_df['Significant'] = (vol_df['p'] < p_val_thresh) & (abs(vol_df['Log2FC']) > 1)
                     hits = vol_df[vol_df['Significant']].sort_values('p')
                     
-                    # Machine Learning Validation
                     y_ml = [1 if g == unique_g[-1] else 0 for g in groups]
                     acc = cross_val_score(RandomForestClassifier(), X_s, y_ml, cv=3).mean()
                     stats_ready = True
@@ -194,29 +194,34 @@ else:
                         st.subheader("Predictive Biomarkers & Database Identification")
                         st.metric("Random Forest Prediction Accuracy", f"{acc:.1%}")
                         
-                        # --- DATABASE LINKING LOGIC ---
+                        # --- DATABASE LINKING & NEUTRAL MASS LOGIC ---
                         results_table = hits.copy()
-                        # Extract only the m/z part from the ID
-                        results_table['m/z'] = results_table['ID'].apply(lambda x: x.split('_')[0])
-                        # Create dynamic URL for HMDB Search
-                        results_table['Search HMDB'] = results_table['m/z'].apply(lambda x: f"https://hmdb.ca/unearth/q?utf8=%E2%9C%20&query={x}&searcher=metabolites")
+                        results_table['m/z'] = results_table['ID'].apply(lambda x: float(x.split('_')[0]))
+                        
+                        # Calculate Neutral Mass
+                        if ion_mode == "Negative [M-H]-":
+                            results_table['Neutral Mass'] = (results_table['m/z'] + 1.0078).round(4)
+                        else:
+                            results_table['Neutral Mass'] = (results_table['m/z'] - 1.0078).round(4)
+
+                        # Create dynamic URLs
+                        results_table['PubChem'] = results_table['m/z'].apply(lambda x: f"https://pubchem.ncbi.nlm.nih.gov/#query={x}")
+                        results_table['Mass Mediator'] = results_table['m/z'].apply(lambda x: f"https://ceumass.eps.uspceu.es/massmediator/search/simple")
                         
                         st.dataframe(
-                            results_table[['ID', 'm/z', 'p', 'Log2FC', 'Search HMDB']],
+                            results_table[['ID', 'm/z', 'Neutral Mass', 'p', 'Log2FC', 'PubChem', 'Mass Mediator']],
                             column_config={
-                                "Search HMDB": st.column_config.LinkColumn("Identify (HMDB)")
+                                "PubChem": st.column_config.LinkColumn("Search PubChem"),
+                                "Mass Mediator": st.column_config.LinkColumn("Identify (CEU)")
                             },
                             use_container_width=True
                         )
-                        st.info("Click the links above to identify candidate structures based on accurate mass.")
+                        st.info(f"Neutral mass calculated for {ion_mode}. Use Identify (CEU) for specialized metabolome searching.")
 
                 with t5:
                     if stats_ready:
-                        st.subheader("Professional Data Package")
                         pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
-                        st.download_button(label="Download Enterprise PDF Report", data=pdf_bytes, file_name="Metabo_Discovery_Report.pdf", mime="application/pdf")
-                    else:
-                        st.info("Analysis requires at least 2 groups to generate a report.")
+                        st.download_button(label="Download Enterprise PDF Report", data=pdf_bytes, file_name="Discovery_Report.pdf", mime="application/pdf")
                 
                 st.balloons()
             except Exception as e:
