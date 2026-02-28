@@ -30,17 +30,17 @@ st.sidebar.markdown("[Buy me a coffee](https://www.buymeacoffee.com/abassyusuf)"
 st.sidebar.markdown("---")
 st.sidebar.caption("🔒 Privacy Shield: Data processed in-memory only.")
 
-# --- 3. HELPER: PDF GENERATOR (Updated for binary output) ---
+# --- 3. HELPER: PDF GENERATOR (Fixed for Python 3 / Bytes) ---
 def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Helvetica", "B", 16)
     pdf.cell(0, 10, "Metabolomics Discovery Report", ln=True, align="C")
     pdf.ln(10)
     
-    pdf.set_font("Arial", "B", 12)
+    pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 10, "1. Executive Summary", ln=True)
-    pdf.set_font("Arial", "", 11)
+    pdf.set_font("Helvetica", "", 11)
     
     summary = (f"The analysis identified metabolic differences between group {g1} and {g2}. "
                f"A total of {feat_count} high-quality features were analyzed. "
@@ -49,11 +49,11 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf.multi_cell(0, 10, summary)
     
     pdf.ln(10)
-    pdf.set_font("Arial", "I", 10)
-    pdf.cell(0, 10, "Disclaimer: This report is generated automatically for research support.", ln=True)
+    pdf.set_font("Helvetica", "I", 10)
+    pdf.cell(0, 10, "Disclaimer: This report is generated automatically for research support by Yusuf Bioinformatics.", ln=True)
     
-    # Return as bytes
-    return pdf.output(dest='S').encode('latin-1')
+    # In modern FPDF2, output() returns bytes directly.
+    return pdf.output()
 
 # --- 4. MAIN INTERFACE ---
 st.title("🧪 Metabo-Cleaner Pro: Enterprise Discovery Suite")
@@ -186,18 +186,19 @@ else:
                 with t5:
                     if stats_ready:
                         st.subheader("Professional Data Package")
-                        st.write("Generate and download your final discovery report below.")
+                        st.write("Click below to download your automated Discovery Report.")
                         
-                        # Generate PDF data
-                        pdf_data = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
+                        # Fix: FPDF2 output() already returns bytes. No .encode() needed.
+                        pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
                         
                         st.download_button(
                             label="📥 Download Enterprise PDF Report",
-                            data=pdf_data,
+                            data=pdf_bytes,
                             file_name="Discovery_Report.pdf",
                             mime="application/pdf"
                         )
-                        st.success("Report generated successfully.")
+                    else:
+                        st.info("Complete analysis with at least 2 groups to unlock reporting.")
                 
                 st.balloons()
             except Exception as e:
