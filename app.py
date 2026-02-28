@@ -13,40 +13,37 @@ from pyteomics import mzml
 import os
 import gc
 
-# --- 1. PRO CONFIGURATION ---
-st.set_page_config(page_title="Metabo-Cleaner Pro | Enterprise", layout="wide", page_icon="💎")
+# --- 1. CONFIGURATION ---
+st.set_page_config(page_title="Metabo-Cleaner Pro | Enterprise", layout="wide")
 
 # --- GLOBAL SETTINGS ---
 contact_email = "abass.metabo@gmail.com"
-# Your Verified Flutterwave Sandbox Link
 payment_url = "https://sandbox.flutterwave.com/donate/rgxclpstozwl"
 
 # --- 2. BUSINESS SIDEBAR ---
-st.sidebar.title(" Metabo-Cleaner Pro")
+st.sidebar.title("Metabo-Cleaner Pro")
 st.sidebar.info("Enterprise-Grade Bioinformatics for Industry & Large Scale Studies.")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Private Consulting")
+st.sidebar.subheader("Private Consulting")
 st.sidebar.write("Need a custom pipeline or private server?")
 contact_url = f"mailto:{contact_email}?subject=Enterprise%20Inquiry"
-st.sidebar.markdown(f" [Email Abass Yusuf]({contact_url})")
+st.sidebar.markdown(f"[Email Abass Yusuf]({contact_url})")
 
-# Fallback Copy Button for Consulting Leads
-if st.sidebar.button(" Show Email for Copying"):
+if st.sidebar.button("Show Email for Copying"):
     st.sidebar.code(contact_email)
-    st.sidebar.caption("Copy and paste into your mail app.")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Research Sponsorship")
+st.sidebar.subheader("Research Sponsorship")
 st.sidebar.write("Your support helps maintain our cloud infrastructure and open-science tools.")
-st.sidebar.markdown(f" [Sponsor the Research Fund]({payment_url})")
+st.sidebar.markdown(f"[Sponsor the Research Fund]({payment_url})")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" How to Cite")
+st.sidebar.subheader("How to Cite")
 st.sidebar.caption("Yusuf, A. (2026). TLL Metabo-Discovery: An Integrated Pipeline for Machine-Learning Validated Metabolomics.")
 
 st.sidebar.markdown("---")
-st.sidebar.caption(" Data Privacy: Files processed in-memory and purged immediately.")
+st.sidebar.caption("Data Privacy: Files processed in-memory and purged immediately.")
 st.sidebar.caption(f"© 2026 Yusuf Bioinformatics | {contact_email}")
 
 # --- 3. HELPER: PDF GENERATOR ---
@@ -71,23 +68,23 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf.set_font("Helvetica", "I", 10)
     pdf.cell(0, 10, f"Generated automatically by Metabo-Cleaner Pro Enterprise. Contact: {contact_email}", ln=True)
     
-    # Return as standard bytes for Streamlit download button
     return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
-st.title(" Metabo-Cleaner Pro: Enterprise Discovery Suite")
+st.title("Metabo-Cleaner Pro: Enterprise Discovery Suite")
 
 mode = st.radio("Select Professional Module:", 
-                ("High-Capacity mzML Processor (Premium)", "Statistical Discovery Dashboard"))
+                ("High-Capacity mzML Processor (Premium)", "Statistical Discovery Dashboard"),
+                help="Switch between raw data extraction and statistical biomarker discovery.")
 
 # ============================================
 # MODULE 1: RAW mzML BATCH PROCESSOR (5GB Capable)
 # ============================================
 if mode == "High-Capacity mzML Processor (Premium)":
-    st.subheader(" Bulk mzML Feature Extraction")
+    st.subheader("Bulk mzML Feature Extraction")
     uploaded_mzmls = st.file_uploader("Upload .mzML batch (Up to 5GB supported)", type=["mzml"], accept_multiple_files=True)
     
-    if uploaded_mzmls and st.button(" Start Enterprise Extraction"):
+    if uploaded_mzmls and st.button("Start Enterprise Extraction"):
         all_features = []
         progress = st.progress(0)
         status = st.empty()
@@ -116,7 +113,7 @@ if mode == "High-Capacity mzML Processor (Premium)":
 
         full_df = pd.concat(all_features, ignore_index=True)
         st.success("Batch Extraction Complete.")
-        st.download_button(" Download Enterprise CSV", full_df.to_csv(index=False).encode('utf-8'), "enterprise_results.csv")
+        st.download_button("Download Enterprise CSV", full_df.to_csv(index=False).encode('utf-8'), "enterprise_results.csv")
         if os.path.exists("temp.mzml"): os.remove("temp.mzml")
 
 # ============================================
@@ -127,7 +124,7 @@ else:
 
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
-        with st.expander(" Advanced Discovery Configuration"):
+        with st.expander("Advanced Discovery Configuration"):
             c1, c2, c3, c4 = st.columns(4)
             mz_col = c1.selectbox("m/z Column", df.columns, index=0)
             rt_col = c2.selectbox("RT Column", df.columns, index=1 if "RT_min" not in df.columns else df.columns.get_loc("RT_min"))
@@ -135,12 +132,12 @@ else:
             in_col = c4.selectbox("Intensity", df.columns, index=df.columns.get_loc("Intensity") if "Intensity" in df.columns else 2)
             
             f1, f2, f3, f4 = st.columns(4)
-            mz_bin = f1.slider("m/z Alignment", 1, 5, 3)
-            min_pres = f2.slider("Min Presence (%)", 0, 100, 80)
+            mz_bin = f1.slider("m/z Alignment Tolerance", 1, 5, 3)
+            min_pres = f2.slider("Min Presence (%) - 80% Rule", 0, 100, 80)
             p_val_thresh = f3.number_input("P-value Signif.", 0.05)
-            scaling = f4.selectbox("Scaling", ["Pareto Scaling", "Auto-Scaling", "None"])
+            scaling = f4.selectbox("Scaling Method", ["Pareto Scaling", "Auto-Scaling", "None"])
 
-        if st.button(" Run Enterprise Discovery Pipeline"):
+        if st.button("Run Enterprise Discovery Pipeline"):
             try:
                 # 1. CLEANING ENGINE
                 df['ID'] = df[mz_col].round(mz_bin).astype(str) + "_" + df[rt_col].round(2).astype(str)
@@ -185,25 +182,45 @@ else:
                     stats_ready = True
 
                 # 3. TABS
-                t1, t2, t3, t4, t5 = st.tabs(["📊 Distributions", "🔵 Multivariate", "🌋 Volcano Plot", "🏆 ML Discovery", "💎 Enterprise Report"])
+                t1, t2, t3, t4, t5 = st.tabs(["📊 Distributions", "🔵 Multivariate", "🌋 Volcano Plot", "🏆 Discovery & DB Search", "📋 Enterprise Report"])
                 
                 with t1: st.plotly_chart(px.box(X.melt(), y='value', title="Intensity Distribution"), use_container_width=True)
                 with t2: st.plotly_chart(px.scatter(x=pca_res[:,0], y=pca_res[:,1], color=groups, title="PCA Separation"), use_container_width=True)
                 with t3:
                     if stats_ready: st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}, title="Discovery Map"), use_container_width=True)
+                
                 with t4:
                     if stats_ready:
+                        st.subheader("Predictive Biomarkers & Database Identification")
                         st.metric("Random Forest Prediction Accuracy", f"{acc:.1%}")
-                        st.dataframe(hits)
+                        
+                        # --- DATABASE LINKING LOGIC ---
+                        results_table = hits.copy()
+                        # Extract only the m/z part from the ID
+                        results_table['m/z'] = results_table['ID'].apply(lambda x: x.split('_')[0])
+                        # Create dynamic URL for HMDB Search
+                        results_table['Search HMDB'] = results_table['m/z'].apply(lambda x: f"https://hmdb.ca/unearth/q?utf8=%E2%9C%20&query={x}&searcher=metabolites")
+                        
+                        st.dataframe(
+                            results_table[['ID', 'm/z', 'p', 'Log2FC', 'Search HMDB']],
+                            column_config={
+                                "Search HMDB": st.column_config.LinkColumn("Identify (HMDB)")
+                            },
+                            use_container_width=True
+                        )
+                        st.info("Click the links above to identify candidate structures based on accurate mass.")
+
                 with t5:
                     if stats_ready:
                         st.subheader("Professional Data Package")
                         pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
-                        st.download_button(label=" Download Enterprise PDF Report", data=pdf_bytes, file_name="Discovery_Report.pdf", mime="application/pdf")
+                        st.download_button(label="Download Enterprise PDF Report", data=pdf_bytes, file_name="Metabo_Discovery_Report.pdf", mime="application/pdf")
+                    else:
+                        st.info("Analysis requires at least 2 groups to generate a report.")
                 
                 st.balloons()
             except Exception as e:
                 st.error(f"Error: {e}")
 
 st.markdown("---")
-st.caption(f" Metabo-Cleaner Pro Enterprise | {contact_email}")
+st.caption(f"Metabo-Cleaner Pro Enterprise | Confidential Research System | {contact_email}")
