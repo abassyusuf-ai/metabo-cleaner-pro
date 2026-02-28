@@ -30,7 +30,7 @@ st.sidebar.markdown("[Buy me a coffee](https://www.buymeacoffee.com/abassyusuf)"
 st.sidebar.markdown("---")
 st.sidebar.caption("🔒 Privacy Shield: Data processed in-memory only.")
 
-# --- 3. HELPER: PDF GENERATOR (Fixed for Python 3 / Bytes) ---
+# --- 3. HELPER: PDF GENERATOR (Fixed with explicit bytes conversion) ---
 def create_pdf_report(g1, g2, feat_count, accuracy):
     pdf = FPDF()
     pdf.add_page()
@@ -50,10 +50,10 @@ def create_pdf_report(g1, g2, feat_count, accuracy):
     
     pdf.ln(10)
     pdf.set_font("Helvetica", "I", 10)
-    pdf.cell(0, 10, "Disclaimer: This report is generated automatically for research support by Yusuf Bioinformatics.", ln=True)
+    pdf.cell(0, 10, "Generated automatically by Metabo-Cleaner Pro Enterprise.", ln=True)
     
-    # In modern FPDF2, output() returns bytes directly.
-    return pdf.output()
+    # MAGIC FIX: Convert bytearray to bytes for Streamlit
+    return bytes(pdf.output())
 
 # --- 4. MAIN INTERFACE ---
 st.title("🧪 Metabo-Cleaner Pro: Enterprise Discovery Suite")
@@ -160,7 +160,7 @@ else:
                     vol_df['Significant'] = (vol_df['p'] < p_val_thresh) & (abs(vol_df['Log2FC']) > 1)
                     hits = vol_df[vol_df['Significant']].sort_values('p')
                     
-                    # Machine Learning Validation
+                    # ML Validation
                     y_ml = [1 if g == unique_g[-1] else 0 for g in groups]
                     acc = cross_val_score(RandomForestClassifier(), X_s, y_ml, cv=3).mean()
                     stats_ready = True
@@ -176,7 +176,7 @@ else:
                 
                 with t3:
                     if stats_ready:
-                        st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}), use_container_width=True)
+                        st.plotly_chart(px.scatter(vol_df, x='Log2FC', y='log10p', color='Significant', hover_name='ID', color_discrete_map={True:'red', False:'gray'}, title="Discovery Map"), use_container_width=True)
                 
                 with t4:
                     if stats_ready:
@@ -186,19 +186,19 @@ else:
                 with t5:
                     if stats_ready:
                         st.subheader("Professional Data Package")
-                        st.write("Click below to download your automated Discovery Report.")
+                        st.write("Download your final discovery report below.")
                         
-                        # Fix: FPDF2 output() already returns bytes. No .encode() needed.
-                        pdf_bytes = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
+                        # --- THE FIX: CAST TO BYTES ---
+                        pdf_output = create_pdf_report(unique_g[0], unique_g[1], len(hits), acc)
                         
                         st.download_button(
                             label="📥 Download Enterprise PDF Report",
-                            data=pdf_bytes,
-                            file_name="Discovery_Report.pdf",
+                            data=pdf_output,
+                            file_name="Metabo_Discovery_Report.pdf",
                             mime="application/pdf"
                         )
                     else:
-                        st.info("Complete analysis with at least 2 groups to unlock reporting.")
+                        st.info("Analysis requires at least 2 groups to generate a report.")
                 
                 st.balloons()
             except Exception as e:
